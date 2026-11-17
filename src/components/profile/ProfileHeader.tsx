@@ -1,90 +1,94 @@
+"use client";
+
+import { useRef } from "react";
+import Link from "next/link";
+import FollowButton, { useFollowedCount, useFollowing } from "@/components/FollowButton";
+import ProfileEditor, { useProfileFields } from "./ProfileEditor";
+import ProfileNote from "./ProfileNote";
 import Avatar from "@/components/Avatar";
 import { formatCount } from "@/lib/format";
 import type { User } from "@/types";
 
 type ProfileHeaderProps = {
   user: User;
+  suggestions?: Pick<User, "username">[];
   postCount: number;
   isMe: boolean; // 내 프로필이면 "프로필 편집", 아니면 "팔로우" 버튼
 };
 
 // 프로필 상단: 사진, 아이디, 버튼, 게시물/팔로워/팔로잉 수, 이름, 소개
-// 버튼은 아직 동작하지 않는 정적인 UI 입니다. (팔로우는 선택 요건에서 Client Component 로 분리 예정)
-export default function ProfileHeader({ user, postCount, isMe }: ProfileHeaderProps) {
+export default function ProfileHeader({ user, postCount, isMe, suggestions = [] }: ProfileHeaderProps) {
+  const archive = useRef<HTMLDialogElement>(null);
+  const fields = useProfileFields(user, isMe);
+  // 팔로우하면 이 사람의 팔로워 수 +1 (버튼과 같은 상태를 보므로 누르는 즉시 반영)
+  const { following } = useFollowing(user.id);
+  // 내 프로필이면 내가 팔로우한 계정 수만큼 팔로잉 수 +
+  const followedCount = useFollowedCount();
   const stats = [
     { label: "게시물", value: postCount },
-    { label: "팔로워", value: user.followerCount },
-    { label: "팔로잉", value: user.followingCount },
+    { label: "팔로워", value: user.followerCount + (!isMe && following ? 1 : 0) },
+    { label: "팔로잉", value: user.followingCount + (isMe ? followedCount : 0) },
   ];
 
   const button = isMe ? (
-    <button
-      type="button"
-      className="rounded-lg bg-neutral-100 px-4 py-1.5 text-sm font-semibold hover:bg-neutral-200"
-    >
-      프로필 편집
-    </button>
+    <div className="grid grid-cols-2 gap-2">
+      <ProfileEditor id={user.id} fields={fields} />
+      <button type="button" className="rounded-lg bg-neutral-100 text-sm font-semibold hover:bg-neutral-200" onClick={() => archive.current?.showModal()}>보관함 보기</button>
+      <dialog ref={archive} aria-label="보관함" className="fixed inset-0 m-auto rounded-xl p-6 backdrop:bg-black/40">
+        <p>보관한 게시물이 없어요.</p>
+        <form method="dialog" className="mt-4 text-right"><button>닫기</button></form>
+      </dialog>
+    </div>
   ) : (
-    <button
-      type="button"
-      className="rounded-lg bg-sky-500 px-5 py-1.5 text-sm font-semibold text-white hover:bg-sky-600"
-    >
-      팔로우
-    </button>
+    // [팔로우] [메시지 보내기] [추천 계정] 한 줄 (메시지 보내기는 화면만 있는 버튼)
+    <div className="relative flex items-stretch gap-2">
+      <FollowButton userId={user.id} wide />
+      <button type="button" className="flex-[1.12] rounded-xl bg-neutral-100 py-2.5 font-semibold hover:bg-neutral-200">
+        메시지 보내기
+      </button>
+      <details>
+        <summary aria-label="추천 계정 보기" title="추천 계정 보기" className="grid h-full w-12 cursor-pointer list-none place-items-center rounded-xl bg-neutral-100 hover:bg-neutral-200 md:w-[52px] [&::-webkit-details-marker]:hidden">
+          {/* 왼쪽 + / 오른쪽 사람 모양 (실제 인스타그램 추천 계정 버튼과 같은 배치) */}
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M1.5 12.5h6M4.5 9.5v6"/><circle cx="15" cy="7.5" r="3.6"/><path d="M8.8 20.2c.4-3.9 3-6.3 6.2-6.3s5.8 2.4 6.2 6.3a.8.8 0 0 1-.8.8H9.6a.8.8 0 0 1-.8-.8z"/></svg>
+        </summary>
+        <div className="absolute right-0 z-10 mt-2 grid gap-2 rounded-xl border border-neutral-200 bg-white p-4 text-sm shadow">
+          <strong>추천 계정</strong>
+          {suggestions.map(u => <Link key={u.username} href={`/${u.username}`}>{u.username}</Link>)}
+        </div>
+      </details>
+    </div>
   );
 
   return (
-    <header className="flex flex-col gap-4 px-4 pt-6 pb-8 md:flex-row md:gap-24 md:px-0 md:pt-8 md:pb-11">
-      <div className="flex items-center gap-6 md:block md:w-[150px] md:shrink-0 md:pl-12 md:box-content">
-        {/* 화면 크기에 따라 사진 크기만 다르게 */}
-        {/* (Avatar 자체가 inline-block 이라 hidden 은 바깥 div 에 줘야 충돌하지 않음) */}
-        <div className="md:hidden">
-          <Avatar user={user} size={77} eager />
+    <header data-visitor={isMe ? undefined : "true"} className="mx-auto w-full max-w-[740px] px-4 pt-8 pb-10 md:px-0 md:pt-16 md:pb-16">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-5 gap-y-4 md:gap-x-12 md:px-5">
+        <div className="relative w-fit md:row-span-2">
+          {isMe && <ProfileNote userId={user.id} />}
+          <div className="md:hidden"><Avatar user={user} size={77} eager /></div>
+          <div className="hidden md:block"><Avatar user={user} size={150} eager /></div>
         </div>
-        <div className="hidden md:block">
-          <Avatar user={user} size={150} eager />
+        <div className="min-w-0 md:self-end">
+          <h1 className="break-words text-2xl font-bold tracking-tight md:text-3xl">{user.username}{!isMe && <a href="#profile-posts" aria-label="게시물로 이동" className="ml-4 align-middle text-lg">···</a>}</h1>
+          <p className="mt-1 text-sm md:text-base">{fields.name}</p>
         </div>
-
-        {/* 모바일: 사진 옆에 아이디 + 버튼 */}
-        <div className="flex min-w-0 flex-col items-start gap-3 md:hidden">
-          <h1 className="truncate text-xl">{user.username}</h1>
-          {button}
+        <div className="col-span-2 min-w-0 space-y-3 text-sm md:col-span-1 md:self-start">
+          <ul className="flex flex-wrap gap-x-5 gap-y-1 md:text-base">
+            {stats.map(({ label, value }) => (
+              <li key={label}>{label} <strong>{formatCount(value)}</strong></li>
+            ))}
+          </ul>
+          <div className="break-words">
+            {fields.bio && <p className="whitespace-pre-line">
+              {fields.bio.split(/(https?:\/\/[^\s<>]+)/gi).map((part, index) =>
+                /^https?:\/\//i.test(part)
+                  ? <a key={index} href={part} target="_blank" rel="noopener noreferrer" className="font-semibold text-sky-900 hover:underline">{part}</a>
+                  : part
+              )}
+            </p>}
+          </div>
         </div>
       </div>
-
-      <section className="flex flex-col gap-5">
-        {/* 데스크톱: 아이디 + 버튼 */}
-        <div className="hidden items-center gap-5 md:flex">
-          <h1 className="text-xl">{user.username}</h1>
-          {button}
-        </div>
-
-        <ul className="flex justify-around border-y border-neutral-200 py-3 text-center text-sm md:justify-start md:gap-10 md:border-0 md:p-0 md:text-base">
-          {stats.map((stat) => (
-            <li key={stat.label} className="flex flex-col md:flex-row md:gap-1">
-              <span className="text-neutral-500 md:order-first md:text-neutral-900">
-                {stat.label}
-              </span>
-              <span className="font-semibold">{formatCount(stat.value)}</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="text-sm">
-          <p className="font-semibold">{user.name}</p>
-          {user.bio && <p className="whitespace-pre-line">{user.bio}</p>}
-          {user.website && (
-            <a
-              href={user.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-sky-900 hover:underline"
-            >
-              {user.website.replace(/^https?:\/\//, "")}
-            </a>
-          )}
-        </div>
-      </section>
+      <div className="mt-6 md:mt-10">{button}</div>
     </header>
   );
 }

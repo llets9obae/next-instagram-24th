@@ -19,9 +19,19 @@ export const metadata: Metadata = {
     template: "%s • Instagram",
   },
   description: "CEOS 24기 Next.js 인스타그램 클론",
+  // favicon: 인스타그램 로고 이미지 (public/icon.png 를 크기별로 줄여서 사용)
+  // - PNG: 대부분의 브라우저 / ICO: 예전 방식(16·32·48px) / apple: 아이폰 홈 화면
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "330x330" },
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon.ico", sizes: "48x48" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children, modal }: LayoutProps<"/">) {
   // layout 은 Server Component 이므로 데이터를 바로 읽어서 내려줄 수 있습니다.
   const currentUser = getCurrentUser();
 
@@ -29,11 +39,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="ko" className={`${geistSans.variable} h-full antialiased`}>
       <body className="min-h-full bg-white text-neutral-900">
         {/* 메뉴 강조는 주소를 알아야 하므로, 알기 전에는 강조 없는 메뉴를 먼저 보여줌 */}
-        <Suspense fallback={<NavigationView currentUser={currentUser} pathname={null} />}>
+        <Suspense
+          fallback={
+            <NavigationView currentUser={currentUser} pathname={null} />
+          }
+        >
           <Navigation currentUser={currentUser} />
         </Suspense>
 
-        <main className="pb-12 md:pb-0 md:pl-[72px] xl:pl-[244px]">{children}</main>
+        <main className="pb-12 md:pb-0 md:px-[72px]">{children}</main>
+        {modal}
       </body>
     </html>
   );

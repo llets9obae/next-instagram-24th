@@ -16,6 +16,8 @@ export type Post = {
   id: string;
   authorId: User["id"];
   imageUrls: string[]; // 여러 장이면 캐러셀, 그리드에는 첫 장만 표시
+  repostedBy?: User["id"][];
+  taggedUserIds?: User["id"][];
   caption: string;
   likeCount: number;
   createdAt: string; // ISO 8601 문자열
@@ -29,14 +31,6 @@ export type Comment = {
   createdAt: string;
 };
 
-export type Story = {
-  id: string;
-  authorId: User["id"];
-  imageUrl: string;
-  createdAt: string;
-};
-
 // 화면에서 자주 쓰는 "작성자 정보가 합쳐진" 형태
 export type PostWithAuthor = Post & { author: User };
 export type CommentWithAuthor = Comment & { author: User };
-export type StoryWithAuthor = Story & { author: User };

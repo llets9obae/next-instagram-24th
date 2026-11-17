@@ -1,8 +1,9 @@
+import { LikeCount } from "@/components/post/PostLike";
 import Image from "next/image";
 import Link from "next/link";
 
 import { CommentIcon, HeartIcon, MultipleIcon } from "@/components/icons";
-import { formatCount } from "@/lib/format";
+import { CommentCount } from "./PostComments";
 import type { Post } from "@/types";
 
 type PostGridItemProps = {
@@ -16,13 +17,13 @@ export default function PostGridItem({ post, commentCount }: PostGridItemProps) 
   return (
     <Link
       href={`/p/${post.id}`}
-      className="group relative block aspect-square overflow-hidden bg-neutral-100"
+      className="group relative block aspect-square overflow-hidden md:aspect-[3/4] bg-neutral-100"
     >
       <Image
         src={post.imageUrls[0]}
         alt={post.caption || "게시물 이미지"}
         fill
-        sizes="(max-width: 935px) 33vw, 300px"
+        sizes="(min-width: 1280px) 17vw, 33vw"
         className="object-cover"
       />
 
@@ -35,11 +36,11 @@ export default function PostGridItem({ post, commentCount }: PostGridItemProps) 
       <div className="absolute inset-0 hidden items-center justify-center gap-6 bg-black/30 font-semibold text-white group-hover:flex">
         <span className="flex items-center gap-1.5">
           <HeartIcon filled className="size-5" />
-          {formatCount(post.likeCount)}
+          <LikeCount id={post.id} count={post.likeCount} />
         </span>
         <span className="flex items-center gap-1.5">
           <CommentIcon className="size-5 fill-white" />
-          {formatCount(commentCount)}
+          <CommentCount id={post.id} base={commentCount} />
         </span>
       </div>
     </Link>

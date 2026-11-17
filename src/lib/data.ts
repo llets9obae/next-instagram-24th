@@ -7,13 +7,11 @@ import {
   CURRENT_USER_ID,
   initialFollowingIds,
   posts,
-  stories,
   users,
 } from "@/data/mock";
 import type {
   CommentWithAuthor,
   PostWithAuthor,
-  StoryWithAuthor,
   User,
 } from "@/types";
 
@@ -87,21 +85,15 @@ export function getCommentCount(postId: string): number {
   return comments.filter((comment) => comment.postId === postId).length;
 }
 
-// ---------- Story ----------
-
-// 유저별로 스토리를 묶어서 반환 (스토리 바에는 유저 한 명당 동그라미 하나)
-export function getStoriesGroupedByUser(): {
-  author: User;
-  stories: StoryWithAuthor[];
-}[] {
-  const groups = new Map<string, StoryWithAuthor[]>();
-  for (const story of [...stories].sort(byOldest)) {
-    const withUser = withAuthor(story);
-    if (!withUser) continue;
-    groups.set(story.authorId, [...(groups.get(story.authorId) ?? []), withUser]);
-  }
-  return [...groups.values()].map((group) => ({
-    author: group[0].author,
-    stories: group,
-  }));
+export function getFeedPage(offset = 0): {
+  items: { post: PostWithAuthor; commentCount: number }[];
+  next: number | null;
+} {
+  const posts = getFeedPosts();
+  const page = posts.slice(offset, offset + 4);
+  const end = offset + page.length;
+  return {
+    items: page.map(post => ({ post, commentCount: getCommentCount(post.id) })),
+    next: end < posts.length ? end : null,
+  };
 }
