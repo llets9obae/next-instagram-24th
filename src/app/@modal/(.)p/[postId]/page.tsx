@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import PostDetail from "@/components/post/PostDetail";
+import PostDetailSkeleton from "@/components/post/PostDetailSkeleton";
 import PostDialog from "@/components/post/PostDialog";
 
 async function Content({ params }: PageProps<"/p/[postId]">) {
@@ -7,5 +8,5 @@ async function Content({ params }: PageProps<"/p/[postId]">) {
 }
 
 export default function ModalPage(props: PageProps<"/p/[postId]">) {
-  return <PostDialog><Suspense fallback={<p>불러오는 중…</p>}><Content {...props} /></Suspense></PostDialog>;
+  return <PostDialog><Suspense fallback={<PostDetailSkeleton />}><Content {...props} /></Suspense></PostDialog>;
 }
